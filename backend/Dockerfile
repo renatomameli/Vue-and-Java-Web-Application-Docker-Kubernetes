@@ -1,24 +1,28 @@
-FROM eclipse-temurin:17-jdk-alpine as builder
+FROM amazoncorretto:17-al2-jdk as builder
 
-COPY --chown=gradle:gradle . /home/gradle/src
+RUN yum update -y && yum install -y wget unzip
+
+RUN wget https://services.gradle.org/distributions/gradle-7.6-bin.zip && \
+    mkdir /opt/gradle && \
+    unzip -d /opt/gradle gradle-7.6-bin.zip && \
+    rm gradle-7.6-bin.zip
+
+ENV PATH=$PATH:/opt/gradle/gradle-7.6/bin
+
+COPY . /home/gradle/src
 
 WORKDIR /home/gradle/src
 
-RUN wget https://services.gradle.org/distributions/gradle-7.6-bin.zip
-RUN unzip gradle-7.6-bin.zip
-ENV GRADLE_HOME /gradle-7.6
-ENV PATH $GRADLE_HOME/bin:$PATH
+RUN /opt/gradle/gradle-7.6/bin/gradle clean build -x test --debug
 
-RUN gradle clean build -x test
+FROM amazoncorretto:17-al2-jdk as finalApp
 
-FROM eclipse-temurin:17-jdk-alpine as finalApp
+RUN mkdir /app
 
-ENTRYPOINT ["sudo", "mkdir", "/app/"]
+WORKDIR /app
 
-WORKDIR app
-
-COPY --from=builder /home/gradle/src/build/libs/Books-0.0.1-SNAPSHOT.jar /app
+COPY --from=builder /home/gradle/src/build/libs/backend-0.0.1-SNAPSHOT.jar /app
 
 EXPOSE 8090
 
-ENTRYPOINT ["java", "-jar", "/app/Books-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "/app/backend-0.0.1-SNAPSHOT.jar"]
