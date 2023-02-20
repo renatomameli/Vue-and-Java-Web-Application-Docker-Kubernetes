@@ -26,3 +26,5 @@ COPY --from=builder /home/gradle/src/build/libs/backend-0.0.1-SNAPSHOT.jar /app
 EXPOSE 8090
 
 CMD ["java", "-jar", "/app/backend-0.0.1-SNAPSHOT.jar"]
+
+#docker run -p 8080:8080 backend
